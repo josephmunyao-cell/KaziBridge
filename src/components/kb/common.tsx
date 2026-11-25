@@ -24,10 +24,10 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
 }
 
 export class TabBoundary extends Component<{ children: ReactNode; name: string }, { err: boolean }> {
-  state = { err: false };
+  override state = { err: false };
   static getDerivedStateFromError() { return { err: true }; }
-  componentDidCatch(e: unknown) { console.error(e); }
-  render() {
+  override componentDidCatch(e: unknown) { console.error(e); }
+  override render() {
     if (this.state.err) return (
       <div className="kb-card p-8 text-center">
         <h3>The {this.props.name} section hit a snag</h3>

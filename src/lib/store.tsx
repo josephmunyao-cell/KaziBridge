@@ -106,7 +106,7 @@ export function KBProvider({ children }: { children: ReactNode }) {
     toast.success("🎉 Sprint complete! Sent to the supervisor for endorsement.");
   }, [set]);
   const endorse = useCallback((id: string, e: Endorsement) => { set((s) => ({ ...s, endorsements: { ...s.endorsements, [id]: e } })); toast.success("Work endorsed — now Verified"); }, [set]);
-  const publish = useCallback((sp: Sprint) => { set((s) => ({ ...s, sprints: [sp, ...s.sprints.map((x) => ({ ...x, isNew: x.userPosted ? x.isNew : false }))] })); }, [set]);
+  const publish = useCallback((sp: Sprint) => { set((s) => ({ ...s, sprints: [sp, ...s.sprints.map((x) => ({ ...x, isNew: x.userPosted ? !!x.isNew : false }))] })); }, [set]);
   const updateSkills = useCallback((skills: string[]) => set((s) => (s.currentProfile ? { ...s, currentProfile: { ...s.currentProfile, skills } } : s)), [set]);
 
   const endorsedCount = Object.keys(state.endorsements).filter((k) => state.applications[k] === "completed").length;
