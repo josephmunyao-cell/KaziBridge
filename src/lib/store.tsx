@@ -45,7 +45,7 @@ export function migrate(raw: unknown): KBState | null {
     const seed = seedState();
     const ids = new Set(d.sprints.map((x) => x?.id));
     const sprints = [...d.sprints.filter((x) => x && typeof x.id === "string" && Array.isArray(x.milestones)), ...seed.sprints.filter((x) => !ids.has(x.id))]
-      .map((x) => { const sd = seed.sprints.find((y) => y.id === x.id); return sd && !x.userPosted ? { ...sd, isNew: x.isNew } : x; });
+      .map((x) => { const sd = seed.sprints.find((y) => y.id === x.id); return sd && !x.userPosted ? { ...sd, isNew: !!x.isNew } : x; });
     const mentees = d.mentees.map((m) => {
       const sd = SEED_MENTEES.find((x) => x.id === m.id);
       const notes: Note[] = Array.isArray(m.notes) ? m.notes.map((n) => (typeof n === "string" ? { date: m.lastCheckIn ?? "", author: "Mentor", text: n } : n)) : [];

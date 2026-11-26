@@ -5,6 +5,7 @@ import { TabBoundary } from "@/components/kb/common";
 import { Overview } from "@/components/kb/Overview";
 import { Sprints } from "@/components/kb/Sprints";
 import { Creator } from "@/components/kb/Creator";
+import { Proof } from "@/components/kb/Proof";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -13,6 +14,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Short paid sprints, verified proof of work and real local opportunity for displaced and host-community youth in Kenya." },
       { property: "og:title", content: "KaziBridge — Paid micro-sprints, verified proof" },
       { property: "og:description", content: "Short paid sprints. Verified proof of work. Real local opportunity." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Index,
@@ -26,7 +29,7 @@ function Panel() {
       {t === "overview" && <Overview />}
       {t === "sprints" && <Sprints />}
       {t === "creator" && <Creator />}
-      {t === "proof" && <div className="kb-card p-8 text-center"><h2>Proof & Mentor</h2><p className="mt-2 text-muted-foreground">This section is not finished yet.</p></div>}
+      {t === "proof" && <Proof />}
     </TabBoundary>
   );
 }

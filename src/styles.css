@@ -204,6 +204,7 @@
 @media print {
   body * { visibility: hidden !important; }
   #proof-card, #proof-card * { visibility: visible !important; }
+  #proof-card, #proof-card * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   #proof-card { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; border: none !important; }
   .no-print { display: none !important; }
 }
