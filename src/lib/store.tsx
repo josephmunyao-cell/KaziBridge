@@ -1,10 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
-  AMINA, HISTORY_SPRINTS, SEED_ACTIONS, SEED_MENTEES, SEED_SPRINTS, bundleFor,
-  type ActionItem, type AppStatus, type Endorsement, type Mentee, type Profile, type Sprint,
+  AMINA, HISTORY_SPRINTS, SEED_ACTIONS, SEED_COMPLETED_ON, SEED_MENTEES, SEED_SPRINTS, bundleFor,
+  type ActionItem, type AppStatus, type Endorsement, type Mentee, type Note, type Profile, type Sprint,
 } from "@/data/seed";
-import { loadJSON, saveJSON, safeRemove } from "./storage";
+import { safeGet, saveJSON, safeRemove } from "./storage";
 import { matchSprint, type MatchResult } from "./matching";
 
 export type Role = "talent" | "business" | "mentor";
@@ -15,8 +15,11 @@ export interface KBState {
   applications: Record<string, AppStatus>; milestoneProgress: Record<string, Record<string, boolean>>;
   endorsements: Record<string, Endorsement>; mentees: Mentee[]; actions: ActionItem[];
   completedThisWeek: number; bannerDismissed: boolean;
+  proofSegment: Segment; completedOn: Record<string, string>; proofSlugs: Record<string, string>;
 }
-const KEY = "kazibridge_v1"; const VERSION = 1;
+export type Segment = "proof" | "tracker";
+const KEY = "kazibridge_v1"; const VERSION = 2;
+export const segmentForRole = (r: Role): Segment => (r === "mentor" ? "tracker" : "proof");
 
 export function seedState(): KBState {
   const b = bundleFor(AMINA);
@@ -26,12 +29,42 @@ export function seedState(): KBState {
     applications: b.applications, milestoneProgress: b.milestoneProgress, endorsements: b.endorsements,
     mentees: SEED_MENTEES.map((m) => ({ ...m })), actions: SEED_ACTIONS.map((a) => ({ ...a })),
     completedThisWeek: 0, bannerDismissed: false,
+    proofSegment: "proof", completedOn: { ...SEED_COMPLETED_ON }, proofSlugs: {},
   };
+}
+
+const ROLES: Role[] = ["talent", "business", "mentor"];
+const TABS_OK: Tab[] = ["overview", "sprints", "creator", "proof"];
+
+/** Merge any stored (v1/v2, possibly partial) state onto fresh seed data without losing user work. */
+export function migrate(raw: unknown): KBState | null {
+  try {
+    const wrap = raw as { v?: number; data?: unknown };
+    const d = (wrap && typeof wrap === "object" && "data" in wrap ? wrap.data : raw) as Partial<KBState> | null;
+    if (!valid(d)) return null;
+    const seed = seedState();
+    const ids = new Set(d.sprints.map((x) => x?.id));
+    const sprints = [...d.sprints.filter((x) => x && typeof x.id === "string" && Array.isArray(x.milestones)), ...seed.sprints.filter((x) => !ids.has(x.id))]
+      .map((x) => { const sd = seed.sprints.find((y) => y.id === x.id); return sd && !x.userPosted ? { ...sd, isNew: x.isNew } : x; });
+    const mentees = d.mentees.map((m) => {
+      const sd = SEED_MENTEES.find((x) => x.id === m.id);
+      const notes: Note[] = Array.isArray(m.notes) ? m.notes.map((n) => (typeof n === "string" ? { date: m.lastCheckIn ?? "", author: "Mentor", text: n } : n)) : [];
+      return { ...(sd ?? {}), ...m, notes: notes.length ? notes : sd?.notes ?? [] } as Mentee;
+    });
+    return {
+      ...seed, ...d, sprints, mentees,
+      role: ROLES.includes(d.role as Role) ? (d.role as Role) : "talent",
+      activeTab: TABS_OK.includes(d.activeTab as Tab) ? (d.activeTab as Tab) : "overview",
+      proofSegment: d.proofSegment === "tracker" ? "tracker" : d.proofSegment === "proof" ? "proof" : segmentForRole((d.role as Role) ?? "talent"),
+      completedOn: { ...seed.completedOn, ...(d.completedOn ?? {}) }, proofSlugs: d.proofSlugs ?? {},
+      endorsements: d.endorsements ?? {}, milestoneProgress: d.milestoneProgress ?? {},
+    };
+  } catch { return null; }
 }
 
 function valid(s: unknown): s is KBState {
   const x = s as KBState;
-  return !!x && Array.isArray(x.sprints) && typeof x.applications === "object" && Array.isArray(x.mentees) && Array.isArray(x.actions);
+  return !!x && typeof x === "object" && Array.isArray(x.sprints) && !!x.applications && typeof x.applications === "object" && Array.isArray(x.mentees) && Array.isArray(x.actions);
 }
 
 interface Ctx {
@@ -48,6 +81,11 @@ interface Ctx {
   endorse: (id: string, e: Endorsement) => void;
   publish: (s: Sprint) => void;
   updateSkills: (skills: string[]) => void;
+  setSegment: (g: Segment) => void;
+  logCheckIn: (id: string, text: string, needsSupport: boolean, next: string) => void;
+  toggleAction: (id: string) => void;
+  addAction: (text: string) => void;
+  proofSlug: (p: Profile) => string;
   matchFor: (s: Sprint) => MatchResult | null;
   sprintById: (id: string) => Sprint | undefined;
 }
@@ -58,8 +96,10 @@ export function KBProvider({ children }: { children: ReactNode }) {
   const hydrated = useRef(false);
 
   useEffect(() => {
-    const saved = loadJSON<KBState>(KEY, VERSION);
-    if (saved && valid(saved)) setState({ ...seedState(), ...saved });
+    let parsed: unknown = null;
+    try { const raw = safeGet(KEY); parsed = raw ? JSON.parse(raw) : null; } catch { parsed = null; }
+    const saved = parsed ? migrate(parsed) : null;
+    if (saved) setState(saved);
     hydrated.current = true;
   }, []);
   useEffect(() => { if (hydrated.current) saveJSON(KEY, VERSION, state); }, [state]);
@@ -70,7 +110,16 @@ export function KBProvider({ children }: { children: ReactNode }) {
     set((s) => ({ ...s, activeTab: t }));
     try { window.scrollTo({ top: 0, behavior: "auto" }); } catch { /* ignore */ }
   }, [set]);
-  const setRole = useCallback((r: Role) => set((s) => ({ ...s, role: r })), [set]);
+  const setRole = useCallback((r: Role) => set((s) => ({ ...s, role: r, proofSegment: segmentForRole(r) })), [set]);
+  const setSegment = useCallback((g: Segment) => set((s) => ({ ...s, proofSegment: g })), [set]);
+  const today = () => new Date().toISOString().slice(0, 10);
+  const logCheckIn = useCallback((id: string, text: string, needsSupport: boolean, next: string) => {
+    set((s) => ({ ...s, mentees: s.mentees.map((m) => m.id === id ? { ...m, notes: [{ date: today(), author: "Mentor", text }, ...m.notes], lastCheckIn: today(), nextCheckIn: next || m.nextCheckIn, needsSupport } : m) }));
+    toast.success("Check-in logged");
+  }, [set]);
+  const toggleAction = useCallback((id: string) => set((s) => ({ ...s, actions: s.actions.map((a) => a.id === id ? { ...a, done: !a.done } : a) })), [set]);
+  const addAction = useCallback((text: string) => { set((s) => ({ ...s, actions: [{ id: `a${Date.now()}`, text, done: false }, ...s.actions] })); toast.success("Action item added"); }, [set]);
+  const proofSlug = useCallback((p: Profile) => state.proofSlugs[p.id] ?? p.slug, [state.proofSlugs]);
 
   const loadProfile = useCallback((p: Profile) => {
     const b = bundleFor(p);
@@ -79,7 +128,7 @@ export function KBProvider({ children }: { children: ReactNode }) {
       const keepApps = Object.fromEntries(Object.entries(s.applications).filter(([k]) => !k.startsWith("h")));
       const keepMs = Object.fromEntries(Object.entries(s.milestoneProgress).filter(([k]) => !k.startsWith("h")));
       const keepEnd = Object.fromEntries(Object.entries(s.endorsements).filter(([k]) => !k.startsWith("h")));
-      return { ...s, currentProfile: p, applications: { ...keepApps, ...b.applications }, milestoneProgress: { ...keepMs, ...b.milestoneProgress }, endorsements: { ...keepEnd, ...b.endorsements } };
+      return { ...s, currentProfile: p, proofSlugs: { ...s.proofSlugs, [p.id]: s.proofSlugs[p.id] ?? p.slug }, applications: { ...keepApps, ...b.applications }, milestoneProgress: { ...keepMs, ...b.milestoneProgress }, endorsements: { ...keepEnd, ...b.endorsements } };
     });
     toast.success(`Sample profile loaded: ${p.shortName}`);
   }, [set]);
@@ -102,7 +151,7 @@ export function KBProvider({ children }: { children: ReactNode }) {
     toast(nowDone ? "Milestone checked ✓" : "Milestone unchecked");
   }, [set]);
   const completeSprint = useCallback((id: string) => {
-    set((s) => ({ ...s, applications: { ...s.applications, [id]: "completed" }, completedThisWeek: s.completedThisWeek + 1 }));
+    set((s) => ({ ...s, applications: { ...s.applications, [id]: "completed" }, completedOn: { ...s.completedOn, [id]: new Date().toISOString().slice(0, 10) }, completedThisWeek: s.completedThisWeek + 1 }));
     toast.success("🎉 Sprint complete! Sent to the supervisor for endorsement.");
   }, [set]);
   const endorse = useCallback((id: string, e: Endorsement) => { set((s) => ({ ...s, endorsements: { ...s.endorsements, [id]: e } })); toast.success("Work endorsed — now Verified"); }, [set]);
@@ -113,8 +162,8 @@ export function KBProvider({ children }: { children: ReactNode }) {
   const matchFor = useCallback((sp: Sprint) => (state.currentProfile ? matchSprint(state.currentProfile, sp, endorsedCount) : null), [state.currentProfile, endorsedCount]);
   const sprintById = useCallback((id: string) => state.sprints.find((x) => x.id === id), [state.sprints]);
 
-  const value = useMemo<Ctx>(() => ({ state, set, setTab, setRole, loadProfile, reset, apply, advance, toggleMilestone, completeSprint, endorse, publish, updateSkills, matchFor, sprintById }),
-    [state, set, setTab, setRole, loadProfile, reset, apply, advance, toggleMilestone, completeSprint, endorse, publish, updateSkills, matchFor, sprintById]);
+  const value = useMemo<Ctx>(() => ({ state, set, setTab, setRole, loadProfile, reset, apply, advance, toggleMilestone, completeSprint, endorse, publish, updateSkills, matchFor, sprintById, setSegment, logCheckIn, toggleAction, addAction, proofSlug }),
+    [state, set, setTab, setRole, loadProfile, reset, apply, advance, toggleMilestone, completeSprint, endorse, publish, updateSkills, matchFor, sprintById, setSegment, logCheckIn, toggleAction, addAction, proofSlug]);
   return <KBContext.Provider value={value}>{children}</KBContext.Provider>;
 }
 
@@ -137,5 +186,8 @@ export function proofStats(state: KBState) {
     days: completed.reduce((a, s) => a + s.days, 0),
     earned: completed.reduce((a, s) => a + s.payKES, 0),
     skills: Array.from(new Set(completed.flatMap((s) => s.skillsRequired))),
+    verifiedSkills: Array.from(new Set(endorsed.flatMap((s) => s.skillsRequired))),
+    pendingSkills: Array.from(new Set(completed.filter((s) => !state.endorsements[s.id]).flatMap((s) => s.skillsRequired))).filter((k) => !endorsed.some((s) => s.skillsRequired.includes(k))),
+    active: state.sprints.filter((s) => state.applications[s.id] === "accepted" || state.applications[s.id] === "in_progress"),
   };
 }

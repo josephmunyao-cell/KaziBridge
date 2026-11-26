@@ -15,7 +15,7 @@ export interface Sprint {
   id: string; title: string; org: string; orgType: OrgType; category: string;
   location: string; mode: Mode; days: number; payKES: number; skillsRequired: string[];
   description: string; milestones: Milestone[]; status: "open" | "history";
-  postedBy: string; isNew?: boolean; userPosted?: boolean; createdAt?: string;
+  postedBy: string; isNew?: boolean; userPosted?: boolean; samplePosted?: boolean; createdAt?: string;
 }
 export interface Endorsement { by: string; org?: string; note: string; rating: number; date: string }
 export interface Profile {
@@ -23,10 +23,13 @@ export interface Profile {
   location: string; areas: string[]; background: string; languages: string[]; skills: string[];
   availability: string; experience: string[]; education: string; phone: string;
 }
+export interface Note { date: string; author: "Mentor" | "Coordinator" | "Business / NGO" | "Talent"; text: string }
+export type EndorseState = "Verified" | "Awaiting" | "None";
 export interface Mentee {
-  id: string; name: string; location: string; currentSprint: string; progress: number;
+  id: string; name: string; location: string; currentSprint: string; org: string; progress: number;
   status: "Active" | "Completed" | "At risk"; sprintsCompleted: number; avgRating: number;
-  lastCheckIn: string; notes: string[];
+  lastCheckIn: string; nextCheckIn: string; needsSupport: boolean; overdue: boolean;
+  endorsement: EndorseState; earnedKES: number; skills: string[]; notes: Note[];
 }
 export interface ActionItem { id: string; text: string; done: boolean }
 
@@ -40,10 +43,12 @@ export const SEED_SPRINTS: Sprint[] = [
   { id: "s4", title: "Digitise 200 beneficiary records and clean the dataset", org: "Northern Hope Initiative", orgType: "NGO", category: "Data & Inventory Organization", location: "Dadaab", mode: "On-site", days: 6, payKES: 9000, skillsRequired: ["Data entry", "Excel/Google Sheets", "Data cleaning", "Somali"], description: "Transcribe 200 paper intake forms into a secure spreadsheet, remove duplicates, standardise names and phone numbers, and flag incomplete records. Data-protection briefing provided.", milestones: ms("s4", [["Data-protection briefing & template setup", 1], ["Enter records 1–100", 3], ["Enter records 101–200", 5], ["De-duplicate, standardise & flag gaps", 6], ["Submit clean dataset + 1-page summary", 6]]), status: "open", postedBy: "Ibrahim Gedi, Programme Officer" },
   { id: "s5", title: "Build a 1-page website with contact + M-Pesa Till info", org: "Garissa Fresh Dairy", orgType: "Local Business", category: "Basic Web & Customer Setup", location: "Garissa", mode: "Remote", days: 7, payKES: 12000, skillsRequired: ["Basic JS/HTML", "Canva design", "Customer service"], description: "Create a simple mobile-friendly page listing milk products, delivery areas, opening hours, a WhatsApp order button and the M-Pesa Till number. Hosting is free (provided).", milestones: ms("s5", [["Gather content, logo & photos", 1], ["Wireframe & owner sign-off", 2], ["Build page & mobile test", 5], ["Publish, connect WhatsApp button & handover", 7]]), status: "open", postedBy: "Halima Osman, Manager" },
   { id: "s6", title: "Community survey enumeration for a water-access study", org: "Maji Bora Partners", orgType: "NGO", category: "Translation & Community Surveys", location: "Garissa", mode: "On-site", days: 5, payKES: 8500, skillsRequired: ["Somali", "Kiswahili", "Data entry", "Customer service"], description: "Conduct 60 household interviews in Somali/Kiswahili using KoboCollect on a provided phone. Training on consent and survey ethics on day 1.", milestones: ms("s6", [["Training on consent & KoboCollect", 1], ["Complete 30 interviews", 3], ["Complete remaining 30 interviews", 4], ["Data quality check & debrief", 5]]), status: "open", postedBy: "Grace Achieng, Field Lead" },
-  { id: "s7", title: "Weekly social content pack (12 posts) for a boda-boda co-op", org: "Tawakal Boda Boda SACCO", orgType: "Local Business", category: "Content & Social Media", location: "Remote", mode: "Remote", days: 4, payKES: 6000, skillsRequired: ["Social media posting", "Canva design", "Copywriting"], description: "Create 12 Facebook/WhatsApp posts covering safety tips, member savings offers and rider spotlights, with captions in Kiswahili and English and a posting schedule.", milestones: ms("s7", [["Content calendar & tone agreement", 1], ["Design posts 1–6", 2], ["Design posts 7–12 + captions", 3], ["Schedule & handover", 4]]), status: "open", postedBy: "Hassan Mohamed, Chair" },
+  { id: "s7", title: "Weekly social content pack (12 posts) for a boda-boda co-op", org: "Tawakal Boda Boda SACCO", orgType: "Local Business", category: "Content & Social Media", location: "Remote", mode: "Remote", days: 4, payKES: 6000, skillsRequired: ["Social media posting", "Canva design", "Copywriting"], description: "Create 12 Facebook/WhatsApp posts covering safety tips, member savings offers and rider spotlights, with captions in Kiswahili and English and a posting schedule.", milestones: ms("s7", [["Content calendar & tone agreement", 1], ["Design posts 1–6", 2], ["Design posts 7–12 + captions", 3], ["Schedule & handover", 4]]), status: "open", postedBy: "Hassan Mohamed, Chair", samplePosted: true },
   { id: "s8", title: "Translate health-awareness leaflets: Somali → Kiswahili → English", org: "Afya Pamoja CBO", orgType: "NGO", category: "Translation & Community Surveys", location: "Remote", mode: "Remote", days: 4, payKES: 5500, skillsRequired: ["Somali", "Kiswahili", "English"], description: "Translate four maternal-health leaflets (~2,400 words) into Kiswahili and English, keeping medical terms accurate and language warm and plain.", milestones: ms("s8", [["Glossary of key health terms", 1], ["Kiswahili translations", 2], ["English translations", 3], ["Review with health officer & finalise", 4]]), status: "open", postedBy: "Dr. Naima Abdullahi" },
   { id: "s9", title: "Customer feedback collection & short report", org: "Kibaki Hardware", orgType: "Local Business", category: "Content & Social Media", location: "Nairobi", mode: "Hybrid", days: 5, payKES: 6500, skillsRequired: ["Customer service", "Excel/Google Sheets", "Copywriting"], description: "Set up a Google Form, collect feedback from 80+ walk-in and WhatsApp customers, then summarise findings and three practical recommendations in a 2-page report.", milestones: ms("s9", [["Build Google Form & QR poster", 1], ["Collect 80+ responses", 3], ["Analyse results in Sheets", 4], ["Deliver 2-page report", 5]]), status: "open", postedBy: "Peter Kamau, Owner" },
   { id: "s10", title: "Product price list and QR menu for a café", org: "Kakuma Coffee Corner", orgType: "Local Business", category: "Digital Outreach & Flyers", location: "Kakuma", mode: "Hybrid", days: 3, payKES: 4000, skillsRequired: ["Canva design", "Data entry"], description: "Design a printed price list and a QR-code digital menu (Canva site) for 40 items, with English and Kiswahili names.", milestones: ms("s10", [["Collect items & prices", 1], ["Design menu & price list", 2], ["Publish QR menu & print-ready file", 3]]), status: "open", postedBy: "Deng Majok, Owner" },
+  { id: "s11", title: "Digitise an M-Pesa agent record book into a simple ledger", org: "Dadaab Mobile Money Point", orgType: "Local Business", category: "Data & Inventory Organization", location: "Dadaab", mode: "On-site", days: 4, payKES: 5000, skillsRequired: ["Data entry", "Excel/Google Sheets", "Somali"], description: "Transfer three months of handwritten float and transaction records into a Google Sheet ledger with daily totals and a reconciliation tab.", milestones: ms("s11", [["Agree ledger columns with the agent", 1], ["Enter month 1 & 2 records", 2], ["Enter month 3 + daily totals", 3], ["Reconciliation tab & handover", 4]]), status: "open", postedBy: "Ahmed Hirsi, Agent", samplePosted: true },
+  { id: "s12", title: "Short video reels showcasing youth artisans", org: "Kakuma Artisans Collective", orgType: "NGO", category: "Content & Social Media", location: "Kakuma", mode: "Remote", days: 5, payKES: 7000, skillsRequired: ["Video editing on phone", "Social media posting", "Copywriting"], description: "Edit 8 short phone-shot reels of artisans at work, add Kiswahili/English captions and prepare a two-week posting plan.", milestones: ms("s12", [["Review footage & storyboard", 1], ["Edit reels 1–4", 3], ["Edit reels 5–8 + captions", 4], ["Posting plan & handover", 5]]), status: "open", postedBy: "Achol Deng, Coordinator" },
 ];
 
 export const HISTORY_SPRINTS: Sprint[] = [
@@ -94,27 +99,30 @@ export function bundleFor(p: Profile): ProfileBundle {
   if (p.id === "amina") {
     return {
       profile: p,
-      applications: { h1: "completed", h2: "completed", h3: "completed" },
-      milestoneProgress: { h1: allTrue(HISTORY_SPRINTS[0]!), h2: allTrue(HISTORY_SPRINTS[1]!), h3: allTrue(HISTORY_SPRINTS[2]!) },
+      applications: { h1: "completed", h2: "completed", h3: "completed", s7: "in_progress" },
+      milestoneProgress: { h1: allTrue(HISTORY_SPRINTS[0]!), h2: allTrue(HISTORY_SPRINTS[1]!), h3: allTrue(HISTORY_SPRINTS[2]!), s7: { "s7-m1": true, "s7-m2": true } },
       endorsements: { ...SEED_ENDORSEMENTS },
     };
   }
   return { profile: p, applications: {}, milestoneProgress: {}, endorsements: {} };
 }
 
+const N = (date: string, author: Note["author"], text: string): Note => ({ date, author, text });
 export const SEED_MENTEES: Mentee[] = [
-  { id: "me1", name: "Samuel Lokiru", location: "Kakuma", currentSprint: "Inventory sheet – Kakuma Coffee Corner", progress: 40, status: "At risk", sprintsCompleted: 1, avgRating: 4.0, lastCheckIn: "2026-11-20", notes: [] },
-  { id: "me2", name: "Faith Wanjiru", location: "Nairobi", currentSprint: "Customer feedback – Kibaki Hardware", progress: 75, status: "Active", sprintsCompleted: 2, avgRating: 4.5, lastCheckIn: "2026-11-23", notes: [] },
-  { id: "me3", name: "Abdirahman Yusuf", location: "Dadaab", currentSprint: "Survey enumeration – Maji Bora", progress: 60, status: "Active", sprintsCompleted: 3, avgRating: 4.7, lastCheckIn: "2026-11-22", notes: [] },
-  { id: "me4", name: "Nyabol Gatluak", location: "Kakuma", currentSprint: "—", progress: 100, status: "Completed", sprintsCompleted: 4, avgRating: 4.8, lastCheckIn: "2026-11-18", notes: [] },
-  { id: "me5", name: "Halima Abdi", location: "Garissa", currentSprint: "Translation – Afya Pamoja", progress: 25, status: "Active", sprintsCompleted: 1, avgRating: 4.3, lastCheckIn: "2026-11-24", notes: [] },
-  { id: "me6", name: "Kevin Otieno", location: "Nairobi", currentSprint: "Social pack – Tawakal SACCO", progress: 20, status: "At risk", sprintsCompleted: 0, avgRating: 0, lastCheckIn: "2026-11-17", notes: [] },
+  { id: "me1", name: "Samuel Lokiru", location: "Kakuma", currentSprint: "Price list & QR menu", org: "Kakuma Coffee Corner", progress: 40, status: "At risk", sprintsCompleted: 1, avgRating: 4.0, lastCheckIn: "2026-11-20", nextCheckIn: "2026-11-25", needsSupport: false, overdue: true, endorsement: "Verified", earnedKES: 4800, skills: ["Inventory", "Excel/Google Sheets"], notes: [N("2026-11-20", "Mentor", "Day 3 of 5 — milestone 2 overdue. Phone battery issues; arranged charging at the hub.")] },
+  { id: "me2", name: "Faith Wanjiru", location: "Nairobi", currentSprint: "Customer feedback report", org: "Kibaki Hardware", progress: 75, status: "Active", sprintsCompleted: 2, avgRating: 4.5, lastCheckIn: "2026-11-23", nextCheckIn: "2026-11-27", needsSupport: false, overdue: false, endorsement: "Verified", earnedKES: 11000, skills: ["Copywriting", "Customer care"], notes: [N("2026-11-23", "Mentor", "62 responses collected; on track for the report.")] },
+  { id: "me3", name: "Abdirahman Yusuf", location: "Dadaab", currentSprint: "Water-access survey", org: "Maji Bora Partners", progress: 60, status: "Active", sprintsCompleted: 3, avgRating: 4.7, lastCheckIn: "2026-11-22", nextCheckIn: "2026-11-28", needsSupport: false, overdue: false, endorsement: "Verified", earnedKES: 21500, skills: ["Somali", "Data entry"], notes: [N("2026-11-22", "Coordinator", "Strong interviewer; consider for a lead enumerator role.")] },
+  { id: "me4", name: "Nyabol Gatluak", location: "Kakuma", currentSprint: "—", org: "—", progress: 100, status: "Completed", sprintsCompleted: 4, avgRating: 4.8, lastCheckIn: "2026-11-18", nextCheckIn: "2026-12-02", needsSupport: false, overdue: false, endorsement: "Awaiting", earnedKES: 26000, skills: ["Canva design", "Translation"], notes: [N("2026-11-18", "Mentor", "Finished 4th sprint. Awaiting supervisor endorsement.")] },
+  { id: "me5", name: "Halima Abdi", location: "Garissa", currentSprint: "Health leaflet translation", org: "Afya Pamoja CBO", progress: 25, status: "Active", sprintsCompleted: 1, avgRating: 4.3, lastCheckIn: "2026-11-24", nextCheckIn: "2026-11-28", needsSupport: false, overdue: false, endorsement: "Verified", earnedKES: 5500, skills: ["Somali", "Kiswahili"], notes: [N("2026-11-24", "Mentor", "Glossary done; starting Kiswahili drafts.")] },
+  { id: "me6", name: "Kevin Otieno", location: "Nairobi", currentSprint: "Social content pack", org: "Tawakal Boda Boda SACCO", progress: 20, status: "At risk", sprintsCompleted: 0, avgRating: 0, lastCheckIn: "2026-11-17", nextCheckIn: "2026-11-22", needsSupport: true, overdue: false, endorsement: "None", earnedKES: 0, skills: ["Social media posting"], notes: [N("2026-11-17", "Mentor", "Needs help with Canva basics — pairing with a design mentor.")] },
 ];
+export const AMINA_MENTOR = "Wanjiku Mutua";
 
 export const SEED_ACTIONS: ActionItem[] = [
   { id: "a1", text: "Check in with Samuel — Day 3 of 5, milestone 2 overdue", done: false },
   { id: "a2", text: "Confirm M-Pesa payout for Nyabol's completed sprint", done: false },
   { id: "a3", text: "Introduce Kevin to a design mentor before Friday", done: false },
+  { id: "a4", text: "Ask Barwaqo Textiles to endorse Nyabol's last sprint", done: true },
 ];
 
 export const SEED_WEEKLY = [
@@ -126,3 +134,4 @@ export const SEED_WEEKLY = [
   { week: "This wk", completed: 2, rating: 4.6 },
 ];
 export const SEED_PAID_OUT = 186500;
+export const SEED_COMPLETED_ON: Record<string, string> = { h1: "2026-10-12", h2: "2026-11-01", h3: "2026-11-21" };
