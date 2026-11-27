@@ -208,3 +208,7 @@
   #proof-card { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; border: none !important; }
   .no-print { display: none !important; }
 }
+
+@media print {
+  .proof-qr { break-inside: avoid; print-color-adjust: exact; box-shadow: none !important; }
+}
