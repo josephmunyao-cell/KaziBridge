@@ -80,8 +80,40 @@ export function Overview() {
         <Stat label="Completed work verified" value={verifiedPct} format={(n) => `${Math.round(n)}%`} />
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+      <section aria-label="Role and top matches" className="grid items-start gap-6 lg:grid-cols-2">
+          <div className="kb-card p-5">
+            <h3>I'm here as…</h3>
+            <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Role">
+              {(["talent", "business", "mentor"] as Role[]).map((r) => (
+                <button key={r} role="radio" aria-checked={state.role === r} onClick={() => setRole(r)} className={`kb-btn min-h-10 rounded-full px-4 text-sm ${state.role === r ? "kb-btn-primary" : "kb-btn-secondary"}`}>
+                  {r === "talent" ? "Talent" : r === "business" ? "Business / NGO" : "Mentor"}
+                </button>
+              ))}
+            </div>
+            <div className="mt-4 space-y-2">
+              {quick[state.role].map((q) => (
+                <button key={q.label} onClick={q.action} className="flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border border-border px-3 text-left text-sm font-medium hover:bg-muted">
+                  <span className="flex min-w-0 items-center gap-2"><q.icon className="size-4 shrink-0 text-primary" /><span className="break-words">{q.label}</span></span><ArrowRight className="size-4 shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
+          {p && (
+            <div className="kb-card p-5">
+              <h3>Top matches for {p.name.split(" ")[0]}</h3>
+              <ul className="mt-3 space-y-2">
+                {topMatches.map(({ s, m }) => (
+                  <li key={s.id} className="flex items-center justify-between gap-3 rounded-xl bg-muted px-3 py-2 text-sm">
+                    <span className="min-w-0 break-words font-medium">{s.title}</span><span className="shrink-0 font-heading font-bold text-verified">{m.score}%</span>
+                  </li>
+                ))}
+              </ul>
+              <button className="kb-btn kb-btn-secondary mt-3 w-full" onClick={() => go("talent", "sprints")}>See all sprints</button>
+            </div>
+          )}
+      </section>
+
+      <section aria-label="Talent profile">
           {p ? (
             <div className="kb-card p-5 sm:p-6">
               <div className="flex flex-wrap items-start gap-4">
@@ -130,40 +162,6 @@ export function Overview() {
               <div className="mt-5"><LoadSampleButton /></div>
             </div>
           )}
-        </div>
-
-        <div className="space-y-4 lg:col-span-2">
-          <div className="kb-card p-5">
-            <h3>I'm here as…</h3>
-            <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Role">
-              {(["talent", "business", "mentor"] as Role[]).map((r) => (
-                <button key={r} role="radio" aria-checked={state.role === r} onClick={() => setRole(r)} className={`kb-btn min-h-10 rounded-full px-4 text-sm ${state.role === r ? "kb-btn-primary" : "kb-btn-secondary"}`}>
-                  {r === "talent" ? "Talent" : r === "business" ? "Business / NGO" : "Mentor"}
-                </button>
-              ))}
-            </div>
-            <div className="mt-4 space-y-2">
-              {quick[state.role].map((q) => (
-                <button key={q.label} onClick={q.action} className="flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border border-border px-3 text-left text-sm font-medium hover:bg-muted">
-                  <span className="flex min-w-0 items-center gap-2"><q.icon className="size-4 shrink-0 text-primary" /><span className="break-words">{q.label}</span></span><ArrowRight className="size-4 shrink-0" />
-                </button>
-              ))}
-            </div>
-          </div>
-          {p && (
-            <div className="kb-card p-5">
-              <h3>Top matches for {p.name.split(" ")[0]}</h3>
-              <ul className="mt-3 space-y-2">
-                {topMatches.map(({ s, m }) => (
-                  <li key={s.id} className="flex items-center justify-between gap-3 rounded-xl bg-muted px-3 py-2 text-sm">
-                    <span className="min-w-0 break-words font-medium">{s.title}</span><span className="shrink-0 font-heading font-bold text-verified">{m.score}%</span>
-                  </li>
-                ))}
-              </ul>
-              <button className="kb-btn kb-btn-secondary mt-3 w-full" onClick={() => go("talent", "sprints")}>See all sprints</button>
-            </div>
-          )}
-        </div>
       </section>
 
       <section className="kb-card p-5 sm:p-6">
