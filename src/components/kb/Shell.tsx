@@ -3,26 +3,6 @@ import { Briefcase, ChevronDown, Home, MoreVertical, PlusSquare, RotateCcw, Shie
 import { useKB, type Tab } from "@/lib/store";
 import { AMINA, FAITH, SAMUEL } from "@/data/seed";
 import { Modal } from "./common";
-import { openVerification } from "@/lib/proof-route";
-
-function FooterVerify() {
-  const [v, setV] = useState(""); const [err, setErr] = useState("");
-  return (
-    <form noValidate className="min-w-0 w-full md:w-auto" onSubmit={(e) => {
-      e.preventDefault();
-      if (!v.trim()) { setErr("Enter a Proof ID or link to verify"); return; }
-      let ok = false; try { ok = openVerification(v); } catch { ok = false; }
-      if (ok) { setV(""); setErr(""); } else setErr("That doesn't look like a KaziBridge Proof ID or verification link.");
-    }}>
-      <label htmlFor="footer-verify" className="mb-1.5 flex items-center gap-1.5 font-heading text-sm font-semibold text-foreground"><ShieldCheck className="size-4 text-[#00897B]" />Verify Proof</label>
-      <div className="flex flex-col gap-2 min-[360px]:flex-row">
-        <input id="footer-verify" type="text" autoComplete="off" spellCheck={false} inputMode="text" className="kb-input min-h-11 w-full min-w-0 text-sm sm:w-72 lg:w-80 2xl:w-96 2xl:text-base" value={v} onChange={(e) => { setV(e.target.value); setErr(""); }} placeholder="Paste a Proof ID or verification link" aria-invalid={!!err} aria-describedby={err ? "footer-verify-err" : undefined} />
-        <button type="submit" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#00897B] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#00695C] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00897B] 2xl:text-base"><ShieldCheck className="size-4" />Verify</button>
-      </div>
-      {err && <p id="footer-verify-err" role="alert" className="mt-1 text-xs text-destructive">{err}</p>}
-    </form>
-  );
-}
 
 export const TABS: { id: Tab; label: string; short: string; icon: typeof Home }[] = [
   { id: "overview", label: "Overview", short: "Home", icon: Home },
@@ -137,19 +117,9 @@ export function Shell({ children }: { children: ReactNode }) {
       </main>
 
       <footer className="no-print mb-[calc(4.5rem+env(safe-area-inset-bottom))] border-t border-border bg-card md:mb-0">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-6 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:gap-6 lg:px-8 xl:max-w-[1400px] 2xl:text-base">
-          <div className="flex min-w-0 items-start gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary font-heading text-lg font-extrabold text-primary-foreground">K</div>
-            <div className="min-w-0">
-              <p className="break-words leading-tight"><span className="font-heading text-lg font-bold text-primary">KaziBridge</span> <span className="text-sm text-muted-foreground 2xl:text-base">· Verified Micro-Sprints &amp; Proof of Work</span></p>
-              <p className="mt-1 break-words text-sm text-muted-foreground">© {new Date().getFullYear()} KaziBridge · Garissa, Dadaab, Kakuma &amp; Nairobi</p>
-            </div>
-          </div>
-          <div className="flex min-w-0 flex-col gap-3 md:flex-row md:flex-wrap md:items-end lg:flex-nowrap">
-            <FooterVerify />
-            <div aria-hidden className="hidden h-10 w-px bg-border md:block" />
-            <button className="inline-flex min-h-11 items-center gap-2 self-start rounded-xl px-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary focus-visible:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:self-auto" onClick={() => setConfirm(true)}><RotateCcw className="size-4" /> Reset Demo</button>
-          </div>
+        <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-1.5 px-4 py-7 text-center sm:px-6 lg:px-8 xl:max-w-[1400px] 2xl:text-base">
+          <p className="break-words font-heading text-base font-bold text-primary 2xl:text-lg">Verified Micro-Sprints &amp; Proof of Work</p>
+          <p className="break-words text-sm text-muted-foreground 2xl:text-base">© {new Date().getFullYear()} KaziBridge.</p>
         </div>
       </footer>
 

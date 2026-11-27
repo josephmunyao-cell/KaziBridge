@@ -3,6 +3,27 @@ import { ArrowRight, BadgeCheck, Briefcase, CheckSquare, Handshake, MapPin, Penc
 import { formatKES, proofStats, useKB, type Role } from "@/lib/store";
 import { LoadSampleButton } from "./Shell";
 import { useCountUp } from "./common";
+import { openVerification } from "@/lib/proof-route";
+
+function VerifyProof() {
+  const [v, setV] = useState(""); const [err, setErr] = useState("");
+  return (
+    <form noValidate className="mx-auto w-full max-w-xl" onSubmit={(e) => {
+      e.preventDefault();
+      if (!v.trim()) { setErr("Enter a Proof ID or link to verify"); return; }
+      let ok = false; try { ok = openVerification(v); } catch { ok = false; }
+      if (ok) { setV(""); setErr(""); } else setErr("That doesn't look like a KaziBridge Proof ID or verification link.");
+    }}>
+      <label htmlFor="page-verify" className="mb-1.5 flex items-center justify-center gap-1.5 font-heading text-sm font-semibold text-foreground"><ShieldCheck className="size-4 text-[#00897B]" />Verify Proof</label>
+      <p className="mb-3 text-center text-sm text-muted-foreground">Paste a Proof ID or verification link to check a proof of work.</p>
+      <div className="flex flex-col gap-2 min-[360px]:flex-row">
+        <input id="page-verify" type="text" autoComplete="off" spellCheck={false} inputMode="text" className="kb-input min-h-11 w-full min-w-0 text-sm 2xl:text-base" value={v} onChange={(e) => { setV(e.target.value); setErr(""); }} placeholder="Paste a Proof ID or verification link" aria-invalid={!!err} aria-describedby={err ? "page-verify-err" : undefined} />
+        <button type="submit" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#00897B] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#00695C] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00897B] 2xl:text-base"><ShieldCheck className="size-4" />Verify</button>
+      </div>
+      {err && <p id="page-verify-err" role="alert" className="mt-1 text-xs text-destructive">{err}</p>}
+    </form>
+  );
+}
 
 function Stat({ label, value, format }: { label: string; value: number; format?: (n: number) => string }) {
   const v = useCountUp(value);
@@ -143,6 +164,10 @@ export function Overview() {
             </div>
           )}
         </div>
+      </section>
+
+      <section className="kb-card p-5 sm:p-6">
+        <VerifyProof />
       </section>
 
       <section>
