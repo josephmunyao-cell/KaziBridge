@@ -3,6 +3,7 @@ import { Briefcase, ChevronDown, Home, MoreVertical, PlusSquare, RotateCcw, Shie
 import { useKB, type Tab } from "@/lib/store";
 import { AMINA, FAITH, SAMUEL } from "@/data/seed";
 import { Modal } from "./common";
+import { VerifyIdInput } from "@/components/proof/VerifyIdInput";
 
 export const TABS: { id: Tab; label: string; short: string; icon: typeof Home }[] = [
   { id: "overview", label: "Overview", short: "Home", icon: Home },
@@ -119,7 +120,10 @@ export function Shell({ children }: { children: ReactNode }) {
       <footer className="no-print mb-[calc(4.5rem+env(safe-area-inset-bottom))] border-t border-border bg-card md:mb-0">
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-sm text-muted-foreground sm:px-6 lg:px-8 xl:max-w-[1400px]">
           <p className="break-words">KaziBridge · Built for the PLP ILO Cohort Mini Hackathon · Track 3 · SDGs 8, 10 &amp; 17</p>
-          <button className="kb-btn kb-btn-ghost px-2 text-sm underline" onClick={() => setConfirm(true)}><RotateCcw className="size-4" /> Reset Demo</button>
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+            <VerifyIdInput compact id="footer-verify" />
+            <button className="kb-btn kb-btn-ghost px-2 text-sm underline" onClick={() => setConfirm(true)}><RotateCcw className="size-4" /> Reset Demo</button>
+          </div>
         </div>
       </footer>
 

@@ -6,6 +6,7 @@ import {
 } from "@/data/seed";
 import { safeGet, saveJSON, safeRemove } from "./storage";
 import { matchSprint, type MatchResult } from "./matching";
+import { issueProof, upsertRecord, type IssuedProof, type ProofRecord } from "./proof";
 
 export type Role = "talent" | "business" | "mentor";
 export type Tab = "overview" | "sprints" | "creator" | "proof";
@@ -16,6 +17,7 @@ export interface KBState {
   endorsements: Record<string, Endorsement>; mentees: Mentee[]; actions: ActionItem[];
   completedThisWeek: number; bannerDismissed: boolean;
   proofSegment: Segment; completedOn: Record<string, string>; proofSlugs: Record<string, string>;
+  proofRecords: Record<string, ProofRecord>; verifyBaseUrl: string;
 }
 export type Segment = "proof" | "tracker";
 const KEY = "kazibridge_v1"; const VERSION = 2;
@@ -30,6 +32,7 @@ export function seedState(): KBState {
     mentees: SEED_MENTEES.map((m) => ({ ...m })), actions: SEED_ACTIONS.map((a) => ({ ...a })),
     completedThisWeek: 0, bannerDismissed: false,
     proofSegment: "proof", completedOn: { ...SEED_COMPLETED_ON }, proofSlugs: {},
+    proofRecords: {}, verifyBaseUrl: "",
   };
 }
 
@@ -58,6 +61,8 @@ export function migrate(raw: unknown): KBState | null {
       proofSegment: d.proofSegment === "tracker" ? "tracker" : d.proofSegment === "proof" ? "proof" : segmentForRole((d.role as Role) ?? "talent"),
       completedOn: { ...seed.completedOn, ...(d.completedOn ?? {}) }, proofSlugs: d.proofSlugs ?? {},
       endorsements: d.endorsements ?? {}, milestoneProgress: d.milestoneProgress ?? {},
+      proofRecords: d.proofRecords && typeof d.proofRecords === "object" ? d.proofRecords : {},
+      verifyBaseUrl: typeof d.verifyBaseUrl === "string" ? d.verifyBaseUrl : "",
     };
   } catch { return null; }
 }
@@ -88,12 +93,16 @@ interface Ctx {
   proofSlug: (p: Profile) => string;
   matchFor: (s: Sprint) => MatchResult | null;
   sprintById: (id: string) => Sprint | undefined;
+  hydrated: boolean;
+  currentProof: IssuedProof | null;
+  setVerifyBaseUrl: (u: string) => void;
 }
 const KBContext = createContext<Ctx | null>(null);
 
 export function KBProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<KBState>(seedState);
   const hydrated = useRef(false);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     let parsed: unknown = null;
@@ -101,6 +110,7 @@ export function KBProvider({ children }: { children: ReactNode }) {
     const saved = parsed ? migrate(parsed) : null;
     if (saved) setState(saved);
     hydrated.current = true;
+    setIsHydrated(true);
   }, []);
   useEffect(() => { if (hydrated.current) saveJSON(KEY, VERSION, state); }, [state]);
 
@@ -162,8 +172,22 @@ export function KBProvider({ children }: { children: ReactNode }) {
   const matchFor = useCallback((sp: Sprint) => (state.currentProfile ? matchSprint(state.currentProfile, sp, endorsedCount) : null), [state.currentProfile, endorsedCount]);
   const sprintById = useCallback((id: string) => state.sprints.find((x) => x.id === id), [state.sprints]);
 
-  const value = useMemo<Ctx>(() => ({ state, set, setTab, setRole, loadProfile, reset, apply, advance, toggleMilestone, completeSprint, endorse, publish, updateSkills, matchFor, sprintById, setSegment, logCheckIn, toggleAction, addAction, proofSlug }),
-    [state, set, setTab, setRole, loadProfile, reset, apply, advance, toggleMilestone, completeSprint, endorse, publish, updateSkills, matchFor, sprintById, setSegment, logCheckIn, toggleAction, addAction, proofSlug]);
+  const currentProof = useMemo(() => (state.currentProfile ? issueProof(state.currentProfile, state) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state.currentProfile, state.sprints, state.applications, state.endorsements, state.completedOn]);
+  // Keep the proof registry in step with live work: same content = same ID, new content = new ID, old one superseded.
+  useEffect(() => {
+    if (!isHydrated || !state.currentProfile || !currentProof) return;
+    const pid = state.currentProfile.id;
+    const prev = Object.values(state.proofRecords).find((r) => r.profileId === pid && !r.supersededBy);
+    if (upsertRecord(state.proofRecords, currentProof, pid) === state.proofRecords) return;
+    setState((s) => ({ ...s, proofRecords: upsertRecord(s.proofRecords, currentProof, pid) }));
+    if (prev && prev.id !== currentProof.id) toast.success("Proof updated: new Proof ID issued");
+  }, [isHydrated, currentProof, state.currentProfile, state.proofRecords]);
+  const setVerifyBaseUrl = useCallback((u: string) => set((s) => ({ ...s, verifyBaseUrl: u })), [set]);
+
+  const value = useMemo<Ctx>(() => ({ hydrated: isHydrated, currentProof, setVerifyBaseUrl, state, set, setTab, setRole, loadProfile, reset, apply, advance, toggleMilestone, completeSprint, endorse, publish, updateSkills, matchFor, sprintById, setSegment, logCheckIn, toggleAction, addAction, proofSlug }),
+    [state, set, setTab, setRole, loadProfile, reset, apply, advance, toggleMilestone, completeSprint, endorse, publish, updateSkills, matchFor, sprintById, setSegment, logCheckIn, toggleAction, addAction, proofSlug, isHydrated, currentProof, setVerifyBaseUrl]);
   return <KBContext.Provider value={value}>{children}</KBContext.Provider>;
 }
 

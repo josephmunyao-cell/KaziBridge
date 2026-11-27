@@ -28,3 +28,9 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules
+- Proof IDs come from a SHA-256 of the canonical, QR-sized snapshot (`src/lib/proof.ts`), never from dates or randomness: the same work must always give the same ID so links stay checkable.
+- SHA-256 is a synchronous pure-JS implementation: `crypto.subtle` is missing on non-secure origins and async hashing would complicate rendering.
+- The verification view is driven by `?proof=…#d=…` on `/` (see `src/lib/proof-route.ts`), not a separate route: the snapshot travels in the URL fragment so it works with no backend.
+- Proof snapshots never contain phone numbers, emails or other contact details.

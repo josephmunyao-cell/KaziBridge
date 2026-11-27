@@ -6,6 +6,8 @@ import { Overview } from "@/components/kb/Overview";
 import { Sprints } from "@/components/kb/Sprints";
 import { Creator } from "@/components/kb/Creator";
 import { Proof } from "@/components/kb/Proof";
+import { VerificationView } from "@/components/proof/VerificationView";
+import { useProofRoute } from "@/lib/proof-route";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -35,5 +37,6 @@ function Panel() {
 }
 
 function Index() {
-  return <KBProvider><Shell><Panel /></Shell></KBProvider>;
+  const route = useProofRoute();
+  return <KBProvider>{route ? <VerificationView route={route} /> : <Shell><Panel /></Shell>}</KBProvider>;
 }
