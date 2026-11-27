@@ -40,7 +40,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_proof: {
+        Args: { _id: string }
+        Returns: {
+          hash: string
+          snapshot: Json
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

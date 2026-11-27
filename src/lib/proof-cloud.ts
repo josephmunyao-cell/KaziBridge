@@ -12,7 +12,8 @@ export async function publishProof(p: Pick<IssuedProof, "id" | "snapshot" | "has
 }
 
 export async function fetchProof(id: string): Promise<{ snapshot: ProofSnapshot; hash: string } | null> {
-  const { data, error } = await supabase.from("proofs").select("snapshot, hash").eq("id", id).maybeSingle();
+  const { data: rows, error } = await supabase.rpc("get_proof", { _id: id });
+  const data = Array.isArray(rows) ? rows[0] : null;
   if (error || !data) return null;
   return { snapshot: data.snapshot as unknown as ProofSnapshot, hash: data.hash };
 }
