@@ -180,6 +180,7 @@ export function KBProvider({ children }: { children: ReactNode }) {
     if (!isHydrated || !state.currentProfile || !currentProof) return;
     const pid = state.currentProfile.id;
     const prev = Object.values(state.proofRecords).find((r) => r.profileId === pid && !r.supersededBy);
+    void import("./proof-cloud").then((m) => m.publishProof(currentProof)).catch(() => {});
     if (upsertRecord(state.proofRecords, currentProof, pid) === state.proofRecords) return;
     setState((s) => ({ ...s, proofRecords: upsertRecord(s.proofRecords, currentProof, pid) }));
     if (prev && prev.id !== currentProof.id) toast.success("Proof updated: new Proof ID issued");

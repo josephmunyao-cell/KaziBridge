@@ -2,7 +2,7 @@ import { History, SearchX, ShieldAlert, ShieldCheck, type LucideIcon } from "luc
 import type { VerifyResult } from "@/lib/proof";
 
 const MAP: Record<VerifyResult["status"], { icon: LucideIcon; title: string; text: string; cls: string }> = {
-  verified: { icon: ShieldCheck, title: "Verified in this prototype", text: "The proof data is unaltered and this Proof ID is in this browser's KaziBridge registry.", cls: "bg-verified text-verified-foreground border-verified" },
+  verified: { icon: ShieldCheck, title: "Verified in this prototype", text: "The proof data is unaltered and this Proof ID is in the KaziBridge proof registry.", cls: "bg-verified text-verified-foreground border-verified" },
   integrity: { icon: ShieldCheck, title: "Integrity check passed (link snapshot)", text: "The proof data in this link is internally consistent. A production registry would confirm the issuer.", cls: "bg-verified-soft text-foreground border-verified border-2" },
   superseded: { icon: History, title: "Superseded", text: "This Proof ID is genuine, but a newer proof exists for this person.", cls: "bg-warning-soft text-foreground border-warning border-2" },
   failed: { icon: ShieldAlert, title: "Verification failed", text: "This proof data was altered or is not a valid KaziBridge proof.", cls: "bg-destructive/10 text-foreground border-destructive border-2" },

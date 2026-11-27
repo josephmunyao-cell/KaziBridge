@@ -34,3 +34,4 @@ use the editor.
 - SHA-256 is a synchronous pure-JS implementation: `crypto.subtle` is missing on non-secure origins and async hashing would complicate rendering.
 - The verification view is driven by `?proof=…#d=…` on `/` (see `src/lib/proof-route.ts`), not a separate route: the snapshot travels in the URL fragment so it works with no backend.
 - Proof snapshots never contain phone numbers, emails or other contact details.
+- The QR encodes only the short link `?proof=<ID>`; proofs are published to the Lovable Cloud `proofs` table (`src/lib/proof-cloud.ts`) and fetched by ID, so the code stays simple to scan. Copied/shared links keep the full `#d=` payload as an offline fallback. Integrity is still checked by recomputing the hash, so open inserts are safe.

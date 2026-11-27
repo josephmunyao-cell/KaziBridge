@@ -160,6 +160,12 @@ export function buildVerifyUrl(base: string, p: Pick<IssuedProof, "id" | "snapsh
   return `${b}?proof=${encodeURIComponent(p.id)}#d=${encodePayload(p.snapshot, p.hash)}`;
 }
 
+/** Short link for the QR: the proof itself is looked up online, so the code stays simple and easy to scan. */
+export function buildShortVerifyUrl(base: string, id: string) {
+  const b = (base || defaultBaseUrl()).split(/[?#]/)[0]!;
+  return `${b}?proof=${encodeURIComponent(id)}`;
+}
+
 /** Parses a pasted Proof ID or full verification URL. */
 export function parseVerifyInput(input: string): { proof: string; d: string | null } | null {
   const raw = input.trim(); if (!raw) return null;

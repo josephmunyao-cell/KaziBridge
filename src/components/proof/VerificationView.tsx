@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, BadgeCheck, Building2, CalendarDays, Check, Hourglass, Link2, MapPin, Printer, Quote, ShieldCheck, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import { displayProofId, verifyProof, type ProofSnapshot } from "@/lib/proof";
+import { displayProofId, encodePayload, normalizeProofId, verifyProof, type ProofSnapshot } from "@/lib/proof";
+import { fetchProof } from "@/lib/proof-cloud";
 import { closeVerification, type ProofRoute } from "@/lib/proof-route";
 import { formatKES, useKB } from "@/lib/store";
 import { Stars, copyText } from "@/components/kb/common";
@@ -89,7 +90,21 @@ function Details({ s, hash, id }: { s: ProofSnapshot; hash: string; id: string }
 
 export function VerificationView({ route }: { route: ProofRoute }) {
   const { state, hydrated } = useKB();
-  const r = useMemo(() => verifyProof(route.proof, route.d, state.proofRecords), [route, state.proofRecords]);
+  const [online, setOnline] = useState<{ id: string; d: string | null } | null>(null);
+  const nid = normalizeProofId(route.proof);
+  const needsLookup = !route.d && !!nid && hydrated && !state.proofRecords[nid];
+  useEffect(() => {
+    if (!needsLookup || !nid || online?.id === nid) return;
+    let live = true;
+    fetchProof(nid).then((p) => { if (live) setOnline({ id: nid, d: p ? encodePayload(p.snapshot, p.hash) : null }); }).catch(() => { if (live) setOnline({ id: nid, d: null }); });
+    return () => { live = false; };
+  }, [needsLookup, nid, online?.id]);
+  const looking = needsLookup && online?.id !== nid;
+  const d = route.d ?? (online?.id === nid ? online.d : null);
+  const r = useMemo(() => {
+    const res = verifyProof(route.proof, d, state.proofRecords);
+    return !route.d && d && res.status === "integrity" ? { ...res, status: "verified" as const } : res;
+  }, [route, d, state.proofRecords]);
   const link = typeof window !== "undefined" ? window.location.href : "";
   return (
     <div className="flex min-h-dvh flex-col bg-background">
@@ -100,7 +115,7 @@ export function VerificationView({ route }: { route: ProofRoute }) {
         </div>
       </header>
       <main className="mx-auto w-full min-w-0 max-w-4xl flex-1 space-y-5 px-4 py-6 sm:px-6 sm:py-8">
-        {!hydrated ? <div className="kb-shimmer h-24 rounded-2xl" aria-label="Checking proof" /> : (
+        {!hydrated || looking ? <div className="kb-shimmer h-24 rounded-2xl" aria-label="Checking proof" /> : (
           <>
             <div className="no-print"><VerificationStatusBanner r={r} /></div>
             {r.status === "superseded" && r.supersededBy && <p className="no-print text-sm">Newer proof: <code className="font-mono font-semibold">{displayProofId(r.supersededBy)}</code></p>}

@@ -2,12 +2,17 @@ import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { AlertTriangle, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
-import { buildVerifyUrl, defaultBaseUrl, isPrivateBase, type IssuedProof } from "@/lib/proof";
+import { buildShortVerifyUrl, buildVerifyUrl, defaultBaseUrl, isPrivateBase, type IssuedProof } from "@/lib/proof";
 import { useKB } from "@/lib/store";
 
 export function useVerifyUrl(p: Pick<IssuedProof, "id" | "snapshot" | "hash"> | null) {
   const { state } = useKB();
   return p ? buildVerifyUrl(state.verifyBaseUrl || defaultBaseUrl(), p) : "";
+}
+
+export function useShortVerifyUrl(id: string | null) {
+  const { state } = useKB();
+  return id ? buildShortVerifyUrl(state.verifyBaseUrl || defaultBaseUrl(), id) : "";
 }
 
 export function downloadQrPng(svg: SVGSVGElement | null, name: string) {
@@ -36,7 +41,7 @@ export function downloadQrPng(svg: SVGSVGElement | null, name: string) {
 
 /** Clean QR block: only the heading and the code. */
 export function ProofQR({ proof }: { proof: IssuedProof }) {
-  const url = useVerifyUrl(proof);
+  const url = useShortVerifyUrl(proof.id);
   return (
     <div data-proof-qr className="proof-qr mx-auto h-fit w-fit max-w-full self-start rounded-2xl border border-border bg-white p-3 shadow-sm sm:p-4">
       <p className="mb-3 text-center font-heading text-sm font-semibold text-[#0F172A]">Scan to verify</p>
