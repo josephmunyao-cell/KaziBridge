@@ -80,8 +80,8 @@ export function Overview() {
         <Stat label="Completed work verified" value={verifiedPct} format={(n) => `${Math.round(n)}%`} />
       </section>
 
-      <section aria-label="Role and top matches" className="grid items-start gap-6 lg:grid-cols-2">
-          <div className="kb-card p-5">
+      <section aria-label="Role and top matches" className="grid items-stretch gap-6 lg:grid-cols-2">
+          <div className="kb-card flex min-w-0 flex-col p-5">
             <h3>I'm here as…</h3>
             <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Role">
               {(["talent", "business", "mentor"] as Role[]).map((r) => (
@@ -90,7 +90,7 @@ export function Overview() {
                 </button>
               ))}
             </div>
-            <div className="mt-4 space-y-2">
+            <div className="mt-4 space-y-2 lg:mt-auto lg:pt-4">
               {quick[state.role].map((q) => (
                 <button key={q.label} onClick={q.action} className="flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border border-border px-3 text-left text-sm font-medium hover:bg-muted">
                   <span className="flex min-w-0 items-center gap-2"><q.icon className="size-4 shrink-0 text-primary" /><span className="break-words">{q.label}</span></span><ArrowRight className="size-4 shrink-0" />
@@ -99,7 +99,7 @@ export function Overview() {
             </div>
           </div>
           {p && (
-            <div className="kb-card p-5">
+            <div className="kb-card flex min-w-0 flex-col p-5">
               <h3>Top matches for {p.name.split(" ")[0]}</h3>
               <ul className="mt-3 space-y-2">
                 {topMatches.map(({ s, m }) => (
@@ -108,7 +108,9 @@ export function Overview() {
                   </li>
                 ))}
               </ul>
-              <button className="kb-btn kb-btn-secondary mt-3 w-full" onClick={() => go("talent", "sprints")}>See all sprints</button>
+              <div className="mt-3 lg:mt-auto lg:pt-3">
+                <button className="kb-btn kb-btn-secondary w-full" onClick={() => go("talent", "sprints")}>See all sprints</button>
+              </div>
             </div>
           )}
       </section>
