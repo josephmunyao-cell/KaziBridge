@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, BadgeCheck, CheckCircle2, Hourglass, Plus, Send, Sparkles, Trash2, X } from "lucide-react";
 import { CATEGORIES, type Mode, type OrgType, type Sprint } from "@/data/seed";
 import { formatKES, useKB } from "@/lib/store";
@@ -7,6 +7,8 @@ import { Modal, SectionTitle, Stars } from "./common";
 
 interface Form { title: string; org: string; orgType: OrgType; category: string; location: string; mode: Mode; description: string; skills: string[]; days: number; budget: string }
 const EMPTY: Form = { title: "", org: "", orgType: "Local Business", category: CATEGORIES[0], location: "Garissa", mode: "Hybrid", description: "", skills: [], days: 4, budget: "" };
+
+const SAMPLE: Form = { title: "Design 5 promo flyers for a Garissa grocery's Ramadan offers", org: "Duka la Baraka", orgType: "Local Business", category: "Digital Outreach & Flyers", location: "Garissa", mode: "On-site", description: "Design 5 bilingual (Somali/Kiswahili) promo flyers and WhatsApp status images for our Ramadan offers.", skills: ["Canva design", "Kiswahili", "Social media posting"], days: 3, budget: "4500" };
 
 const PRESETS: { label: string; f: Partial<Form> }[] = [
   { label: "Flyers & Promo Pack", f: { title: "Promo flyer pack for weekend offers", org: "Al-Amin Supermarket", category: "Digital Outreach & Flyers", description: "Design 4 bilingual promo flyers and WhatsApp status images for our weekend offers.", skills: ["Canva design", "Kiswahili", "Social media posting"], days: 3, budget: "4000", mode: "Hybrid" } },
@@ -69,6 +71,14 @@ export function Creator() {
   const [scope, setScope] = useState<ScopeResult | null>(null);
   const [ms, setMs] = useState<string[]>([]);
   const [published, setPublished] = useState<string | null>(null);
+  const auto = useRef(false);
+  useEffect(() => {
+    if (auto.current || !state.currentProfile) return;
+    auto.current = true;
+    const r = scopeSprint(`${SAMPLE.title} ${SAMPLE.description} ${SAMPLE.category}`, SAMPLE.days);
+    setF({ ...SAMPLE, days: r.days }); setScope(r); setMs(r.milestones);
+  }, [state.currentProfile]);
+  const applyPreset = (pf: Partial<Form>) => { setF({ ...EMPTY, ...pf }); setScope(null); setMs([]); setErrors({}); };
   const up = <K extends keyof Form>(k: K, v: Form[K]) => setF((x) => ({ ...x, [k]: v }));
 
   const runScope = () => {
@@ -113,10 +123,10 @@ export function Creator() {
         <SectionTitle title="Post a micro-sprint" sub="Scope fair, short, paid work for local talent in minutes." />
         <div className="mb-4 flex flex-wrap gap-2">
           <span className="w-full text-sm font-medium text-muted-foreground sm:w-auto sm:self-center">Quick presets:</span>
-          {PRESETS.map((p) => <button key={p.label} className="kb-btn kb-btn-secondary min-h-10 rounded-full px-3 text-sm" onClick={() => { setF({ ...EMPTY, ...p.f }); setScope(null); setMs([]); setErrors({}); }}>{p.label}</button>)}
+          {PRESETS.map((p) => <button key={p.label} className="kb-btn kb-btn-secondary min-h-10 rounded-full px-3 text-sm" onClick={() => applyPreset(p.f)}>{p.label}</button>)}
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-5">
+        <div className="grid items-start gap-6 lg:grid-cols-5">
           <form className="kb-card space-y-4 p-5 sm:p-6 lg:col-span-3" onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
             <div><label htmlFor="f-title" className="text-sm font-medium">Sprint title</label><input id="f-title" className="kb-input mt-1" value={f.title} onChange={(e) => up("title", e.target.value)} />{err("title")}</div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -142,7 +152,7 @@ export function Creator() {
             </div>
           </form>
 
-          <aside className="kb-card p-5 sm:p-6 lg:col-span-2" aria-live="polite">
+          <aside className="kb-card self-start p-5 sm:p-6 lg:sticky lg:top-24 lg:col-span-2" aria-live="polite">
             <div className="flex items-center gap-2"><Sparkles className="size-5 text-primary" /><h3>AI-style scoper</h3></div>
             <p className="text-xs text-muted-foreground">Works offline · local template library, no data leaves your device</p>
             {scoping ? (
@@ -180,7 +190,17 @@ export function Creator() {
                 </div>
               </div>
             ) : (
-              <p className="mt-4 text-sm text-muted-foreground">Pick a preset or describe your task, then tap <strong>Scope this sprint</strong> for milestones, days and a fair pay suggestion.</p>
+              <div className="mt-4 space-y-4">
+                <p className="text-sm text-muted-foreground">Describe your task, then tap <strong>Scope this sprint</strong> for milestones, days and a fair pay suggestion.</p>
+                <div className="rounded-xl border border-dashed border-border p-3">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Example output</div>
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-sm"><div className="rounded-lg bg-muted p-2">3 days</div><div className="rounded-lg bg-verified-soft p-2 font-semibold text-verified">KES 4,000–5,000</div></div>
+                  <ul className="mt-2 space-y-1 text-sm text-muted-foreground"><li>1. Agree brief and offers</li><li>2. Draft flyer designs</li><li>3. Revise and deliver files</li></ul>
+                </div>
+                <div className="flex flex-wrap gap-2"><span className="w-full text-sm font-medium">Try a preset:</span>
+                  {PRESETS.slice(0, 3).map((p) => <button key={p.label} type="button" className="kb-btn kb-btn-secondary min-h-10 rounded-full px-3 text-sm" onClick={() => applyPreset(p.f)}>{p.label}</button>)}
+                </div>
+              </div>
             )}
           </aside>
         </div>
